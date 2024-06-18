@@ -84,7 +84,7 @@ def process_logs(gpu_info_log_path, test_log_path):
         lines = f.readlines()
     temps, powers, mems, utils = [], [], [], []
     for line in lines:
-        temp, power, mem, util = map(int, re.findall(r"\d+", line))
+        temp, power, mem, util = [float(re.search(r"\d+(\.\d+)?", part).group()) for part in line.split(',')]
         if util != 0:  # 去除占用率为0 %的行
             temps.append(temp)
             powers.append(power)
