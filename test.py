@@ -14,7 +14,6 @@ def infer_images(args, input_images, output_dir=None, save_output=False):
         image_raw = cv2.imread(input_path)
         image = dasac.preprocess_image(image_raw)
         mask_pred = dasac.infer(image)
-        image_overlay = dasac.get_image_overlay(image, mask_pred)
         if save_output:
             if not output_dir:
                 output_path = input_path.replace(".png", "_output.png")
@@ -23,6 +22,7 @@ def infer_images(args, input_images, output_dir=None, save_output=False):
                     output_dir,
                     os.path.basename(input_path).replace(".png", "_output.png"),
                 )
+            image_overlay = dasac.get_image_overlay(image, mask_pred)
             cv2.imwrite(output_path, image_overlay)
     end_time = time.time()
     total_time = end_time - start_time
@@ -98,7 +98,7 @@ def process_logs(gpu_info_log_path, test_log_path):
     # 处理 test.log
     with open(test_log_path, "r") as f:
         lines = f.readlines()
-    total_images = int(re.search(r"\d+", [line for line in lines if "Found" in line][0]).group())
+    total_images = int(re.findall(r"\d+", [line for line in lines if "Found" in line][0])[-1])
     total_time = float(re.search(r"\d+\.\d+", [line for line in lines if "Inference time" in line][0]).group())
     fps = total_images / total_time
 
@@ -112,11 +112,11 @@ def main(args):
         batch_test(save_output=args.save_output)
     elif args.mode == "parse_logs":
         avg_temp, avg_power, avg_mem, avg_util, fps = process_logs(args.gpu_info_log_path, args.test_log_path)
-        print("Average temperature: {}°C".format(avg_temp))
-        print("Average power: {}W".format(avg_power))
-        print("Average memory usage: {}MB".format(avg_mem))
-        print("Average GPU utilization: {}%".format(avg_util))
-        print("FPS: {:.2f}".format(fps))
+        print(f"Average temperature: {avg_temp:.2f}°C")
+        print(f"Average power: {avg_power:.2f}W")
+        print(f"Average memory usage: {avg_mem:.1f}MB")
+        print(f"Average GPU utilization: {avg_util:.2f}%")
+        print(f"FPS: {fps:.2f}")
     else:
         raise ValueError("Invalid mode. Choose 'single', 'batch' or 'parse_logs'")
 
