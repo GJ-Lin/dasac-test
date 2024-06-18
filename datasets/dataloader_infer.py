@@ -43,25 +43,25 @@ class DLInfer(DLBase):
 
         self.images = []
         self.masks = []
-        with open(split_fn, "r") as lines:
-            for line in lines:
-                _image = line.strip("\n").split(' ')
+        # with open(split_fn, "r") as lines:
+        #     for line in lines:
+        #         _image = line.strip("\n").split(' ')
 
-                _mask = None
-                if len(_image) == 2:
-                    _image, _mask = _image
-                else:
-                    assert len(_image) == 1
-                    _image = _image[0]
+        #         _mask = None
+        #         if len(_image) == 2:
+        #             _image, _mask = _image
+        #         else:
+        #             assert len(_image) == 1
+        #             _image = _image[0]
 
-                _image = os.path.join(cfg.DATASET.ROOT, _image.lstrip('/'))
-                assert os.path.isfile(_image), '%s not found' % _image
-                self.images.append(_image)
+        #         _image = os.path.join(cfg.DATASET.ROOT, _image.lstrip('/'))
+        #         assert os.path.isfile(_image), '%s not found' % _image
+        #         self.images.append(_image)
             
-                if not _mask is None:
-                    _mask = os.path.join(cfg.DATASET.ROOT, _mask.lstrip('/'))
-                    assert os.path.isfile(_mask), '%s not found' % _mask
-                self.masks.append(_mask)
+        #         if not _mask is None:
+        #             _mask = os.path.join(cfg.DATASET.ROOT, _mask.lstrip('/'))
+        #             assert os.path.isfile(_mask), '%s not found' % _mask
+        #         self.masks.append(_mask)
 
     def __len__(self):
         return len(self.images)

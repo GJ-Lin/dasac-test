@@ -1,3 +1,7 @@
 *.pyc
 *.sw*
 data/
+snapshots/cityscapes/baselines/resnet101_gta/final_e136.pth
+input/
+output/
+log/
