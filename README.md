@@ -1,174 +1,90 @@
-# Self-supervised Augmentation Consistency <br/> for Adapting Semantic Segmentation
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Framework](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?&logo=PyTorch&logoColor=white)](https://pytorch.org/)
+# dasac 测试
 
-This repository contains the official implementation of our paper:
+## 环境准备
 
-**Self-supervised Augmentation Consistency for Adapting Semantic Segmentation**<br>
-[Nikita Araslanov](https://arnike.github.io) and [Stefan Roth](https://www.visinf.tu-darmstadt.de/visinf/team_members/sroth/sroth.en.jsp)<br>
-CVPR 2021. [[pdf](https://openaccess.thecvf.com/content/CVPR2021/papers/Araslanov_Self-Supervised_Augmentation_Consistency_for_Adapting_Semantic_Segmentation_CVPR_2021_paper.pdf)] [[supp](https://openaccess.thecvf.com/content/CVPR2021/supplemental/Araslanov_Self-Supervised_Augmentation_Consistency_CVPR_2021_supplemental.pdf)] [[arXiv](https://arxiv.org/abs/2105.00097)]
+### 1. 基础环境
 
-| <img src="assets/stuttgart.gif" alt="drawing" width="420"/><br> |
-|:--:|
-| <p align="left">We obtain state-of-the-art accuracy of adapting semantic <br> segmentation by enforcing consistency across photometric <br> and similarity transformations. We use neither style transfer <br> nor adversarial training.</p> |
+原项目要求 Python >=3.6, PyTorch >=1.4, CUDA >= 10.0。
 
+- 在中科曙光的机器上，用 Python == 3.8.19，PyTorch == 2.1.1，CUDA == 10.2 测试通过。
+- 在实验室台式机上，用 Python == 3.8.19，PyTorch == 2.3.1，CUDA == 12.2 测试通过。
 
-Contact: Nikita Araslanov *fname.lname* (at) visinf.tu-darmstadt.de
+其中，PyTorch 的安装可以参考[官网](https://pytorch.org/get-started/locally/)。
 
+- 中科曙光的机器要从服务器上下载 wheel 文件手动安装。
 
----
+### 2. OpenCV
 
-## Installation
-**Requirements.** To reproduce our results, we recommend Python >=3.6, PyTorch >=1.4, CUDA >=10.0. At least two Titan X GPUs (12Gb) or equivalent are required for VGG-16; ResNet-101 and VGG-16/FCN need four.
+安装最新版本的 OpenCV：
 
-1. create conda environment:
-```
-conda create --name da-sac
-source activate da-sac
+```bash
+conda install -c conda-forge opencv
 ```
 
-2. install PyTorch >=1.4 (see [PyTorch instructions](https://pytorch.org/get-started/locally/)). For example,
+### 3. 其他依赖
 
-```
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
-```
-
-3. install the dependencies:
-```
+```bash
 pip install -r requirements.txt
 ```
 
-4. download data ([Cityscapes](https://www.cityscapes-dataset.com/downloads/), [GTA5](https://download.visinf.tu-darmstadt.de/data/from_games/), [SYNTHIA](https://synthia-dataset.net/downloads/)) and create symlinks in the ```./data``` folder, as follows:
+## 数据准备
 
-```
-./data/cityscapes -> <symlink to Cityscapes>
-./data/cityscapes/gtFine2/
-./data/cityscapes/leftImg8bit/
+### 1. 数据集
 
-./data/game -> <symlink to GTA>
-./data/game/labels_cs
-./data/game/images
+在项目根目录下创建 `input` 文件夹，将数据集放在其中的 `image` 文件夹下，形如：
 
-./data/synthia  -> <symlink to SYNTHIA>
-./data/synthia/labels_cs
-./data/synthia/RGB
-```
-Note that all ground-truth label IDs (Cityscapes, GTA5 and SYNTHIA) should be converted to Cityscapes [train IDs](assets/train_IDs.md).
-The label directories in the above example (```gtFine2```, ```labels_cs```) therefore refer not to the original labels, but to these converted semantic maps.
-
-## Training
-Training from ImageNet initialisation proceeds in three steps:
-1. Training the baseline (ABN)
-2. Generating the weights for importance sampling
-3. Training with augmentation consistency from the ABN baseline
-
-### 1. Training the baseline (ABN)
-Here the input are ImageNet models available from the official PyTorch repository. We provide the links to those models for convenience.
-| Backbone | Link |
-|---|---|
-| ResNet-101 | [resnet101-5d3b4d8f.pth](https://download.pytorch.org/models/resnet101-5d3b4d8f.pth) (171M) |
-| VGG-16 | [vgg16_bn-6c64b313.pth](https://download.pytorch.org/models/vgg16_bn-6c64b313.pth) (528M) |
-
-By default, these models should be placed in ./models/pretrained/ (though configurable with ```MODEL.INIT_MODEL```).
-
-To run the training
-```
-bash ./launch/train.sh [gta|synthia] [resnet101|vgg16|vgg16fcn] base
-```
-where the first argument specifies the source domain, the second determines the network architecture.
-The third argument ```base``` instructs to run the training of the baseline.
-
-If you would like to skip this step, you can use our pre-trained models:
-
-**Source domain: GTA5**
-| Backbone | Arch. | IoU (val) | Link | MD5 |
-|---|---|:-:|---|---|
-| ResNet-101 | DeepLabv2 | 40.8 | [baseline_abn_e040.pth (336M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/resnet101_gta/baseline_abn_e040.pth) | `9fe17[...]c11fc` |
-| VGG-16 | DeepLabv2 | 37.1 | [baseline_abn_e115.pth (226M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16_gta/baseline_abn_e115.pth) | `d4ffc[...]ef755` |
-| VGG-16 | FCN | 36.7 | [baseline_abn_e040.pth (1.1G)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16fcn_gta/baseline_abn_e040.pth) | `aa2e9[...]bae53` |
-
-
-**Source domain: SYNTHIA**
-| Backbone | Arch. | IoU (val) | Link | MD5 |
-|---|---|:-:|---|---|
-| ResNet-101 | DeepLabv2 | 36.3 | [baseline_abn_e090.pth (336M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/resnet101_synthia/baseline_abn_e090.pth) | `b3431[...]d1a83` |
-| VGG-16 | DeepLabv2 | 34.4 | [baseline_abn_e070.pth (226M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16_synthia/baseline_abn_e070.pth) | `3af24[...]5b24e` |
-| VGG-16 | FCN | 31.6 | [baseline_abn_e040.pth (1.1G)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16fcn_synthia/baseline_abn_e040.pth) | `5f457[...]e4b3a` |
-
-**Tip:** You can download these files (as well as the final models below) with ```tools/download_baselines.sh```:
 ```bash
-cp tools/download_baselines.sh snapshots/cityscapes/baselines/
-cd snapshots/cityscapes/baselines/
-bash ./download_baselines.sh
+input
+├── image
+│   ├── 000001.png
+│   ├── 000002.png
+│   ├── 000003.png
+│   ├── 000004.png
+│   ├── 000005.png
+│   └── ...
+└── test_input.png
 ```
 
-### 2. Generating weights for importance sampling 
-To generate the weights you need to
-1. generate mask predictions with your baseline (see [inference](#inference) below);
-2. run ```tools/compute_image_weights.py``` that reads in those predictions and counts the predictions per each class.
+- `test_input.png` 不是必需的。
 
-If you would like to skip this step, you can use our weights we computed for the ABN baselines above:
-| Backbone | Arch. | Source: GTA5 | Source: SYNTHIA |
-|---|---|---|---|
-| ResNet-101 | DeepLabv2 | [cs_weights_resnet101_gta.data](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/cs_weights/cs_weights_resnet101_gta.data) | [cs_weights_resnet101_synthia.data](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/cs_weights/cs_weights_resnet101_synthia.data) |
-| VGG-16 | DeepLabv2 | [cs_weights_vgg16_gta.data](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/cs_weights/cs_weights_vgg16_gta.data) | [cs_weights_vgg16_synthia.data](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/cs_weights/cs_weights_vgg16_synthia.data) |
-| VGG-16 | FCN | [cs_weights_vgg16fcn_gta.data](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/cs_weights/cs_weights_vgg16fcn_gta.data) | [cs_weights_vgg16fcn_synthia.data](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/cs_weights/cs_weights_vgg16fcn_synthia.data) |
+### 2. 模型
 
-**Tip:** The bash script ```data/download_weights.sh``` will download all these importance sampling weights in the current directory.
+使用提供的预训练模型或者训练好的模型用于推理。对于预训练模型，可以通过脚本下载：
 
-### 3. Training with augmentation consistency
-To train the model with augmentation consistency, we use the same shell script as in step 1, but without the argument ```base```:
-```
-bash ./launch/train.sh [gta|synthia] [resnet101|vgg16|vgg16fcn]
-```
-Make sure to specify your baseline snapshot with ```RESUME``` bash variable set in the environment (```export RESUME=...```) or directly in the shell script (commented out by default).
-
-We provide our final models for download.
-
-**Source domain: GTA5**
-| Backbone | Arch. | IoU (val) |  IoU (test) | Link | MD5 |
-|---|---|:-:|:-:|---|---|
-| ResNet-101 | DeepLabv2 | 53.8 | 55.7 | [final_e136.pth (504M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/resnet101_gta/final_e136.pth) | `59c16[...]5a32f` |
-| VGG-16 | DeepLabv2 | 49.8 | 51.0 | [final_e184.pth (339M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16_gta/final_e184.pth) | `0accb[...]d5881` |
-| VGG-16 | FCN | 49.9 | 50.4 | [final_e112.pth (1.6G)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16fcn_gta/final_e112.pth) | `e69f8[...]f729b` |
-
-**Source domain: SYNTHIA**
-| Backbone | Arch. | IoU (val) |  IoU (test) | Link | MD5 |
-|---|---|:-:|:-:|---|---|
-| ResNet-101 | DeepLabv2 | 52.6 | 52.7 | [final_e164.pth (504M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/resnet101_synthia/final_e164.pth) | `a7682[...]db742` |
-| VGG-16 | DeepLabv2 | 49.1 | 48.3 | [final_e164.pth (339M)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16_synthia/final_e164.pth) | `c5b31[...]5fdb7` |
-| VGG-16 | FCN | 46.8 | 45.8 | [final_e098.pth (1.6G)](https://download.visinf.tu-darmstadt.de/data/2021-cvpr-araslanov-da-sac/snapshots/baselines/vgg16fcn_synthia/final_e098.pth) | `efb74[...]845cc` |
-
-## Inference and evaluation
-
-### Inference
-To run single-scale inference from your snapshot, use ```infer_val.py```.
-The bash script ```launch/infer_val.sh``` provides an easy way to run the inference by specifying a few variables:
-```
-# validation/training set
-FILELIST=[val_cityscapes|train_cityscapes] 
-# configuration used for training
-CONFIG=configs/[deeplabv2_vgg16|deeplab_resnet101|fcn_vgg16]_train.yaml
-# the following 3 variables effectively specify the path to the snapshot
-EXP=...
-RUN_ID=...
-SNAPSHOT=...
-# the snapshot path is defined as
-# SNAPSHOT_PATH=snapshots/cityscapes/${EXP}/${RUN_ID}/${SNAPSHOT}.pth
+```bash
+bash snapshots/cityscapes/baselines/download_baselines.sh
 ```
 
-### Evaluation
-Please use the Cityscapes' official evaluation tool ```evalPixelLevelSemanticLabeling``` from [Cityscapes scripts](https://github.com/mcordts/cityscapesScripts/tree/master/cityscapesscripts) for evaluating your results.
+- 下载模型的选择可以在 `download_baselines.sh` 中修改，当前程序适配的是 `resnet101_gta` 系列的模型。
 
-## Citation
-We hope you find our work useful. If you would like to acknowledge it in your project, please use the following citation:
+## 运行测试
+
+- 对于中科曙光的机器，脚本应使用 `ixsmi` 获取 GPU 信息。
+- 对于有 NVIDIA 驱动的机器，脚本应修改为使用 `nvidia-smi` 获取 GPU 信息。
+
+### 1. 单通道测试
+
+```bash
+bash test_single.sh
 ```
-@inproceedings{Araslanov:2021:DASAC,
-    author    = {Araslanov, Nikita and Roth, Stefan},
-    title     = {Self-Supervised Augmentation Consistency for Adapting Semantic Segmentation},
-    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month     = {June},
-    year      = {2021},
-    pages     = {15384-15394}
-}
+
+成功运行后，会在当前目录下保存 `test.log` 和 `gpu_info.log` 文件。前者保存图片处理的时间，后者保存 GPU 的信息。
+
+### 2. 双通道测试
+
+```bash
+bash test_batch.sh
 ```
+
+成功运行后，会在当前目录下保存 `test_1.log`、`test_2.log` 和 `gpu_info.log` 文件。
+
+### 3. 评估
+
+```bash
+python test.py --mode parse_logs --gpu_info_log_path <gpu_info_log_path> --test_log_path <test_log_path>
+```
+
+- `<gpu_info_log_path>` 为 GPU 信息的日志文件路径。
+- `<test_log_path>` 为测试日志文件路径。对于双通道测试，选择其中一个即可。
+
+评估结果会输出到终端，包含 GPU 温度、功耗、内存使用、利用率和处理帧率等信息。
