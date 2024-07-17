@@ -51,6 +51,7 @@ class Dasac(object):
         assert os.path.isfile(args['resume']), "Snapshot not found: {}".format(args['resume'])
         state_dict = convert_dict(torch.load(args['resume'])["model"])
         # print(self.model)
+        self.check_model_dtype()
         print('Loading model from {}'.format(args['resume']))
         self.model.load_state_dict(state_dict, strict=False)
 
@@ -91,3 +92,30 @@ class Dasac(object):
     def preprocess_image(self, image):
         image = image.astype(np.float32) / 255.0
         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+
+    def check_model_dtype(self):
+        # 初始化计数器
+        int8_count = 0
+        fp16_count = 0
+        fp32_count = 0
+
+        # 遍历模型的所有参数
+        for p in self.model.parameters():
+            # 检查数据类型
+            # print(f"参数名: {p.name}, 数据类型: {p.dtype}")
+            if p.dtype == torch.int8:
+                int8_count += 1
+            elif p.dtype == torch.float16:
+                fp16_count += 1
+            elif p.dtype == torch.float32:
+                fp32_count += 1
+
+
+        # 打印结果
+        print(f"INT8 参数数量: {int8_count}")
+        print(f"FP16 参数数量: {fp16_count}")
+        print(f"FP32 参数数量: {fp32_count}")
+
+        # 如果需要，也可以返回这些计数
+        return int8_count, fp16_count
